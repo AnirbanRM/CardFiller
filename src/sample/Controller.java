@@ -1,6 +1,12 @@
 package sample;
 
+
+//Storage -> Images/JSON organization/templateN/front.png back.png template.png
+// upload users -> User and templateN
+
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -12,12 +18,17 @@ import javafx.scene.canvas.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.effect.Effect;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontPosture;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -31,45 +42,106 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.ResourceBundle;
 
-class Element{
-
-    String entity;
-    double X,Y;
-
-    Element(String entity, double X, double Y){
-        this.entity = entity;
-        this.X = X;
-        this.Y = Y;
-    }
-}
 
 public class Controller implements Initializable {
 
     public Stage curr_stg;
-    BufferedImage card_img; Image card_img_prepared;
     File csv_file_path;
     HashMap<String,Integer> placeHolders;
-    ArrayList<Element> droppedEntities;
+    Face front,back, activeFace;
 
     String currentDragging;
 
     @FXML
-    TextField img_path_box,csv_file_box,output_dir_box;
+    TextField img_path_box_f,img_path_box_b,csv_file_box,output_dir_box;
     @FXML
     Canvas canvas;
     @FXML
     ScrollPane scrollpane;
     @FXML
-    Button export_button,img_path_browse,csv_file_browse,output_browse;
+    Button export_button,img_path_browse_f,img_path_browse_b,csv_file_browse,output_browse;
     @FXML
     ListView placeholder_list;
     @FXML
     AnchorPane mainpane;
+    @FXML
+    ComboBox<String> font_box;
+    @FXML
+    CheckBox bold,italics,underline;
+    @FXML
+    TextField font_size_box;
+    @FXML
+    ColorPicker font_colour_box;
+    @FXML
+    RadioButton front_radio,back_radio;
 
-    Element activeElement;
+    private void populateFontBox(){
+        fontEnable(false);
+        font_box.setCellFactory(c -> {
+            ListCell<String> cell = new ListCell<String>(){
+                @Override
+                public void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (item != null) {
+                        setText(item);
+                        setFont(new Font(item, 13));
+                    }
+                    else {
+                        setText(null);
+                    }
+                }
+            };
+            return cell;
+        });
+
+
+        font_box.getItems().addAll(Font.getFontNames());
+        font_box.getSelectionModel().select((new Font(13)).getName());
+
+        CheckBox[] cbxs = {bold,italics,underline};
+        for(CheckBox c : cbxs)
+            c.selectedProperty().addListener(new ChangeListener<Boolean>() {
+                @Override
+                public void changed(ObservableValue<? extends Boolean> observableValue, Boolean aBoolean, Boolean t1) {
+                    activeFace.activeElement.isBold=bold.isSelected();
+                    activeFace.activeElement.isItalic=italics.isSelected();
+                    activeFace.activeElement.isUnderline=underline.isSelected();
+                    try{redraw();}catch (Exception e){}
+                }
+            });
+
+        font_box.valueProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observableValue, String s, String t1) {
+                activeFace.activeElement.font = new Font(font_box.getSelectionModel().getSelectedItem(),15);
+                try{redraw();}catch (Exception e){}
+            }
+        });
+    }
 
     private double distance(double X1, double Y1, double X2, double Y2){
         return Math.sqrt(Math.pow((X1-X2),2) + Math.pow((Y1-Y2),2));
+    }
+
+    void fontEnable(boolean bool){
+        if(activeFace.activeElement==null)
+            bool = false;
+
+        font_box.setDisable(!bool);
+        bold.setDisable(!bool);
+        italics.setDisable(!bool);
+        underline.setDisable(!bool);
+        font_size_box.setDisable(!bool);
+        font_colour_box.setDisable(!bool);
+
+        if(activeFace.activeElement!=null){
+            font_size_box.setText(String.valueOf(activeFace.activeElement.size));
+            font_box.getSelectionModel().select(activeFace.activeElement.font.getName());
+            bold.setSelected(activeFace.activeElement.isBold);
+            italics.setSelected(activeFace.activeElement.isItalic);
+            underline.setSelected(activeFace.activeElement.isUnderline);
+            font_colour_box.setValue(activeFace.activeElement.color);
+        }
     }
 
     public void  makeDraggable(){
@@ -77,21 +149,26 @@ public class Controller implements Initializable {
         canvas.setOnMousePressed(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent mouseEvent) {
-                for(Element e : droppedEntities){
+                for(Element e : activeFace.droppedEntities){
                     if(distance(e.X,e.Y,mouseEvent.getX(),mouseEvent.getY())<=5) {
-                        activeElement = e;
-                        break;
+                        activeFace.activeElement = e;
+                        fontEnable(true);
+                        try{redraw();}catch (Exception i){}
+                        return;
                     }
                 }
+                activeFace.activeElement = null;
+                fontEnable(false);
+                try{redraw();}catch (Exception i){}
             }
         });
 
         canvas.setOnMouseDragged(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent mouseEvent) {
-                if(activeElement!=null){
-                    activeElement.X = mouseEvent.getX();
-                    activeElement.Y = mouseEvent.getY();
+                if(activeFace.activeElement!=null){
+                    activeFace.activeElement.X = mouseEvent.getX();
+                    activeFace.activeElement.Y = mouseEvent.getY();
                     try {
                         redraw();
                     }catch (Exception e){
@@ -110,13 +187,6 @@ public class Controller implements Initializable {
             }
         });
 
-        canvas.setOnMouseReleased(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent mouseEvent) {
-                activeElement = null;
-            }
-        });
-
         canvas.setOnDragDropped(new EventHandler<DragEvent>() {
             @Override
             public void handle(DragEvent dragEvent) {
@@ -124,7 +194,7 @@ public class Controller implements Initializable {
                 if(t==null)
                     return;
 
-                droppedEntities.add(new Element(t,dragEvent.getX(),dragEvent.getY()));
+                activeFace.droppedEntities.add(new Element(t,dragEvent.getX(),dragEvent.getY()));
 
                 try {
                     redraw();
@@ -189,21 +259,21 @@ public class Controller implements Initializable {
         }catch (Exception e){e.printStackTrace();}
     }
 
-    private void load_image(File f){
+    private void load_image(File f,Face face){
         if(f==null)
             return;
-        img_path_box.setText(f.getPath());
-        card_img_prepared = null;
+        ((face==front)?img_path_box_f:img_path_box_b).setText(f.getPath());
+        face.card_img_prepared = null;
 
         try {
-            card_img = ImageIO.read(f);
+            face.card_img = ImageIO.read(f);
         }catch (Exception e){
             e.printStackTrace();
             return;
         }
 
-        canvas.setWidth(card_img.getWidth());
-        canvas.setHeight(card_img.getHeight());
+        canvas.setWidth(face.card_img.getWidth());
+        canvas.setHeight(face.card_img.getHeight());
         try {
             redraw();
         }catch (Exception e){
@@ -214,36 +284,93 @@ public class Controller implements Initializable {
     private void redraw() throws Exception{
         GraphicsContext g = canvas.getGraphicsContext2D();
         g.clearRect(0,0,canvas.getWidth(),canvas.getHeight());
-        canvas.setWidth(card_img.getWidth());
-        canvas.setHeight(card_img.getHeight());
 
-        if(card_img_prepared==null){
+        if(activeFace.card_img==null)
+            return;
+
+        canvas.setWidth(activeFace.card_img.getWidth());
+        canvas.setHeight(activeFace.card_img.getHeight());
+
+        if(activeFace.card_img_prepared==null){
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ImageIO.write(card_img, "png", bos);
-            card_img_prepared = SwingFXUtils.toFXImage(ImageIO.read(new ByteArrayInputStream(bos.toByteArray())),null);
+            ImageIO.write(activeFace.card_img, "png", bos);
+            activeFace.card_img_prepared = SwingFXUtils.toFXImage(ImageIO.read(new ByteArrayInputStream(bos.toByteArray())),null);
         }
 
-        g.drawImage(card_img_prepared,0,0);
+        g.drawImage(activeFace.card_img_prepared,0,0);
 
-        for(Element e : droppedEntities){
+        for(Element e : activeFace.droppedEntities){
+            if(e.equals(activeFace.activeElement)){
+                g.setFill(Color.valueOf("#FF0000"));
+                g.setStroke(Color.valueOf("#FF0000"));
+                g.strokeRect(e.X-10,e.Y-10,20,20);
+            }
+
+            g.setFill(e.color);
+            g.setStroke(e.color);
+
             g.fillOval(e.X-5,e.Y-5,10,10);
             g.strokeOval(e.X-8,e.Y-8,16,16);
-            g.setFont(new Font("Calibri",15));
-            g.fillText(e.entity,e.X+15,e.Y+15);
+
+            Font f = Font.font(e.font.getName(), e.isBold?FontWeight.BOLD:FontWeight.NORMAL, e.isItalic? FontPosture.ITALIC:FontPosture.REGULAR, e.size);
+            g.setFont(f);
+            g.fillText(e.entity,e.X+20,e.Y+20);
         }
     }
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        img_path_browse.setOnMouseClicked(new EventHandler<MouseEvent>() {
+        front = new Face();
+        back = new Face();
+        activeFace = front;
+        populateFontBox();
+
+        front_radio.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent mouseEvent) {
+                activeFace = front;
+                fontEnable(true);
+                try{
+                    redraw();
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        back_radio.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent mouseEvent) {
+                activeFace = back;
+                fontEnable(true);
+                try{
+                    redraw();
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        img_path_browse_f.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent mouseEvent) {
                 FileChooser fileChooser = new FileChooser();
                 FileChooser.ExtensionFilter efil = new FileChooser.ExtensionFilter("Images","*.jpg","*.jpeg","*.png");
                 fileChooser.getExtensionFilters().add(efil);
-                load_image(fileChooser.showOpenDialog(curr_stg));
+                load_image(fileChooser.showOpenDialog(curr_stg),front);
             }
         });
+
+        img_path_browse_b.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent mouseEvent) {
+                FileChooser fileChooser = new FileChooser();
+                FileChooser.ExtensionFilter efil = new FileChooser.ExtensionFilter("Images","*.jpg","*.jpeg","*.png");
+                fileChooser.getExtensionFilters().add(efil);
+                load_image(fileChooser.showOpenDialog(curr_stg),back);
+            }
+        });
+
 
         csv_file_browse.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
@@ -268,13 +395,43 @@ public class Controller implements Initializable {
             }
         });
 
+        font_size_box.textProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observableValue, String s, String t1) {
+                try{
+                    Integer.parseInt(font_size_box.getText());
+                }catch (Exception e){
+                    font_size_box.setText(String.valueOf(Element.DEFAULT_FONT_SIZE));
+                }
+                activeFace.activeElement.size = Integer.parseInt(font_size_box.getText());
+                try {
+                    redraw();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        font_colour_box.valueProperty().addListener(new ChangeListener<Color>() {
+            @Override
+            public void changed(ObservableValue<? extends Color> observableValue, Color color, Color t1) {
+                activeFace.activeElement.color = font_colour_box.getValue();
+                try{
+                    redraw();
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        });
+
         export_button.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent mouseEvent) {
                 export();
             }
         });
-        droppedEntities = new ArrayList<Element>();
+        front.droppedEntities = new ArrayList<Element>();
+        back.droppedEntities = new ArrayList<Element>();
 
         makeDraggable();
     }
@@ -303,34 +460,40 @@ public class Controller implements Initializable {
                 }
             }
 
-            //fis.close();
+            fis.close();
         }catch (Exception e){
             e.printStackTrace();
         }
     }
 
     private void export_a_record(String[] a,int num){
+        for(Face fc : new Face[]{front,back}) {
+            Canvas c = new Canvas(fc.card_img.getWidth(), fc.card_img.getHeight());
+            GraphicsContext g = c.getGraphicsContext2D();
 
-        Canvas c = new Canvas(card_img.getWidth(),card_img.getHeight());
-        GraphicsContext g = c.getGraphicsContext2D();
+            g.drawImage(fc.card_img_prepared, 0, 0);
 
-        g.drawImage(card_img_prepared,0,0);
+            for (Element i : fc.droppedEntities) {
+                try {
+                    Font f = Font.font(i.font.getName(), i.isBold ? FontWeight.BOLD : FontWeight.NORMAL, i.isItalic ? FontPosture.ITALIC : FontPosture.REGULAR, i.size);
+                    g.setFont(f);
+                    g.setFill(i.color);
+                    g.fillText(a[placeHolders.get(i.entity)], i.X + 20, i.Y + 20);
+                } catch (Exception e) {
+                }
+            }
 
-        for(Element i : droppedEntities){
+            WritableImage wi = new WritableImage((int) c.getWidth(), (int) c.getHeight());
+            SnapshotParameters sp = new SnapshotParameters();
+            sp.setFill(Color.TRANSPARENT);
+
+            File img_file = new File(output_dir_box.getText() + "\\" + num + ((fc == front)?"_front":"_back") + ".png");
             try {
-                g.fillText(a[placeHolders.get(i.entity)], i.X, i.Y);
-            }catch (Exception e){}
+                img_file.createNewFile();
+                ImageIO.write(SwingFXUtils.fromFXImage(c.snapshot(sp, wi), null), "png", img_file);
+            } catch (Exception e) {
+            }
         }
-
-        WritableImage wi = new WritableImage((int)c.getWidth(),(int)c.getHeight());
-        SnapshotParameters sp = new SnapshotParameters();
-        sp.setFill(Color.TRANSPARENT);
-
-        File img_file = new File(output_dir_box.getText()+"\\"+num+".png");
-        try {
-            img_file.createNewFile();
-            ImageIO.write(SwingFXUtils.fromFXImage(c.snapshot(sp,wi), null), "png", img_file);
-        }catch (Exception e){}
     }
 
 }
