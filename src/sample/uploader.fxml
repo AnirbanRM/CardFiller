@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane prefHeight="527.0" prefWidth="674.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.Uploader">
+
+    <children>
+        <Label layoutX="28.0" layoutY="24.0" text="Upload Enterprise Template">
+            <font>
+                <Font name="Calibri Bold" size="32.0" />
+            </font>
+        </Label>
+        <Line endX="474.0" endY="-47.0" layoutX="170.0" layoutY="116.0" startX="-140.0" startY="-47.0" />
+      <RadioButton fx:id="ot" layoutX="44.0" layoutY="91.0" mnemonicParsing="false" text="Overwrite template">
+         <toggleGroup>
+            <ToggleGroup fx:id="temp_upload" />
+         </toggleGroup></RadioButton>
+      <RadioButton fx:id="nt" layoutX="349.0" layoutY="91.0" mnemonicParsing="false" selected="true" text="Create new template" toggleGroup="$temp_upload" />
+      <ListView fx:id="lv" disable="true" layoutX="66.0" layoutY="120.0" prefHeight="342.0" prefWidth="263.0" />
+      <Label fx:id="tnlabel" disable="true" layoutX="372.0" layoutY="187.0" text="Template Name" />
+      <TextField fx:id="t_name" disable="true" layoutX="375.0" layoutY="204.0" prefHeight="25.0" prefWidth="245.0" />
+        <Button fx:id="upload" layoutX="434.0" layoutY="444.0" mnemonicParsing="false" prefHeight="50.0" prefWidth="207.0" style="-fx-background-color: #f55f6c; -fx-background-radius: 20;" text="Upload Template" textFill="WHITE">
+            <font>
+                <Font name="System Bold" size="18.0" />
+            </font>
+        </Button>
+    </children>
+
+</AnchorPane>

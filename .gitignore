@@ -1,2 +1,3 @@
 # Project exclude paths
 /out/
+/src/sample/service_account.json

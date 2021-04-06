@@ -21,12 +21,12 @@
                   <Insets right="61.0" />
                </padding></TextField>
             <Button fx:id="csv_file_browse" layoutX="665.0" layoutY="55.0" mnemonicParsing="false" text="Browse" />
-            <CheckBox fx:id="bold" layoutX="946.0" layoutY="52.0" mnemonicParsing="false" text="Bold" />
-            <CheckBox fx:id="italics" layoutX="1013.0" layoutY="52.0" mnemonicParsing="false" text="Italics" />
-            <CheckBox fx:id="underline" layoutX="1083.0" layoutY="52.0" mnemonicParsing="false" text="Underline" />
-            <ComboBox fx:id="font_box" layoutX="946.0" layoutY="18.0" prefHeight="25.0" prefWidth="208.0" />
-            <TextField fx:id="font_size_box" layoutX="879.0" layoutY="18.0" prefHeight="25.0" prefWidth="55.0" />
-            <ColorPicker fx:id="font_colour_box" layoutX="772.0" layoutY="18.0" prefHeight="25.0" prefWidth="94.0" />
+            <CheckBox fx:id="bold" layoutX="946.0" layoutY="52.0" mnemonicParsing="false" text="Bold" AnchorPane.bottomAnchor="34.0" AnchorPane.rightAnchor="181.0" AnchorPane.topAnchor="52.0" />
+            <CheckBox fx:id="italics" layoutX="1013.0" layoutY="52.0" mnemonicParsing="false" text="Italics" AnchorPane.bottomAnchor="34.0" AnchorPane.rightAnchor="108.0" AnchorPane.topAnchor="52.0" />
+            <CheckBox fx:id="underline" layoutX="1083.0" layoutY="52.0" mnemonicParsing="false" text="Underline" AnchorPane.bottomAnchor="34.0" AnchorPane.rightAnchor="16.0" AnchorPane.topAnchor="52.0" />
+            <ComboBox fx:id="font_box" layoutX="946.0" layoutY="18.0" prefHeight="25.0" prefWidth="208.0" AnchorPane.bottomAnchor="60.0" AnchorPane.rightAnchor="18.0" AnchorPane.topAnchor="18.0" />
+            <TextField fx:id="font_size_box" layoutX="879.0" layoutY="18.0" prefHeight="25.0" prefWidth="55.0" AnchorPane.bottomAnchor="60.0" AnchorPane.rightAnchor="238.0" AnchorPane.topAnchor="18.0" />
+            <ColorPicker fx:id="font_colour_box" layoutX="772.0" layoutY="18.0" prefHeight="25.0" prefWidth="94.0" AnchorPane.bottomAnchor="60.0" AnchorPane.rightAnchor="306.0" AnchorPane.topAnchor="18.0" />
             <Label layoutX="383.0" layoutY="22.0" prefWidth="108.0" text="Back Card Image" />
             <TextField fx:id="img_path_box_b" editable="false" layoutX="482.0" layoutY="18.0" prefHeight="25.0" prefWidth="238.0">
                <padding>
@@ -49,7 +49,8 @@
             <Label layoutX="27.0" layoutY="22.0" text="Ouput Dir" />
             <TextField fx:id="output_dir_box" editable="false" layoutX="102.0" layoutY="18.0" prefHeight="25.0" prefWidth="536.0" />
             <Button fx:id="output_browse" layoutX="656.0" layoutY="18.0" mnemonicParsing="false" text="Browse" />
-            <Button fx:id="export_button" layoutX="721.0" layoutY="18.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="139.0" text="Export" AnchorPane.bottomAnchor="18.0" AnchorPane.rightAnchor="312.0" AnchorPane.topAnchor="18.0" />
+            <Button fx:id="export_button" layoutX="721.0" layoutY="18.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="139.0" text="Export" />
+            <Button fx:id="upload_button" layoutX="1011.0" layoutY="18.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="139.0" text="Upload" AnchorPane.bottomAnchor="18.0" AnchorPane.rightAnchor="22.0" AnchorPane.topAnchor="18.0" />
          </children>
       </AnchorPane>
       <RadioButton fx:id="front_radio" layoutX="98.0" layoutY="130.0" mnemonicParsing="false" selected="true" text="Front">

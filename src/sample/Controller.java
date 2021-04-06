@@ -4,13 +4,15 @@ package sample;
 //Storage -> Images/JSON organization/templateN/front.png back.png template.png
 // upload users -> User and templateN
 
-import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
@@ -18,29 +20,25 @@ import javafx.scene.canvas.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
-import javafx.scene.effect.Effect;
-import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
-import javafx.scene.text.Text;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 
 import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.ResourceBundle;
+import java.util.*;
 
 
 public class Controller implements Initializable {
@@ -59,7 +57,7 @@ public class Controller implements Initializable {
     @FXML
     ScrollPane scrollpane;
     @FXML
-    Button export_button,img_path_browse_f,img_path_browse_b,csv_file_browse,output_browse;
+    Button export_button,img_path_browse_f,img_path_browse_b,csv_file_browse,output_browse,upload_button;
     @FXML
     ListView placeholder_list;
     @FXML
@@ -144,7 +142,7 @@ public class Controller implements Initializable {
         }
     }
 
-    public void  makeDraggable(){
+    public void makeDraggable(){
 
         canvas.setOnMousePressed(new EventHandler<MouseEvent>() {
             @Override
@@ -325,29 +323,23 @@ public class Controller implements Initializable {
         activeFace = front;
         populateFontBox();
 
-        front_radio.setOnMouseClicked(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent mouseEvent) {
-                activeFace = front;
-                fontEnable(true);
-                try{
-                    redraw();
-                }catch (Exception e){
-                    e.printStackTrace();
-                }
+        front_radio.setOnMouseClicked(mouseEvent -> {
+            activeFace = front;
+            fontEnable(true);
+            try{
+                redraw();
+            }catch (Exception e){
+                e.printStackTrace();
             }
         });
 
-        back_radio.setOnMouseClicked(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent mouseEvent) {
-                activeFace = back;
-                fontEnable(true);
-                try{
-                    redraw();
-                }catch (Exception e){
-                    e.printStackTrace();
-                }
+        back_radio.setOnMouseClicked(mouseEvent -> {
+            activeFace = back;
+            fontEnable(true);
+            try{
+                redraw();
+            }catch (Exception e){
+                e.printStackTrace();
             }
         });
 
@@ -434,6 +426,91 @@ public class Controller implements Initializable {
         back.droppedEntities = new ArrayList<Element>();
 
         makeDraggable();
+
+        upload_button.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent mouseEvent) {
+                try {
+                    if(resourceBundle.containsKey("NAME"))
+                        upload(resourceBundle.getString("ORG"), resourceBundle.getString("NAME"));
+                    else
+                        upload(resourceBundle.getString("ORG"),null);
+                }catch (Exception e){}
+            }
+        });
+
+
+        if(resourceBundle.containsKey("FRONT")){
+            img_path_box_f.setText(resourceBundle.getString("FRONT"));
+            load_image(new File(resourceBundle.getString("FRONT")),front);
+        }
+
+        if(resourceBundle.containsKey("BACK")){
+            img_path_box_b.setText(resourceBundle.getString("BACK"));
+            load_image(new File(resourceBundle.getString("BACK")),back);
+        }
+
+        if(resourceBundle.containsKey("TEMPLATE")){
+            createfields(new File(resourceBundle.getString("TEMPLATE")));
+        }
+
+    }
+
+    private void createfields(File template) {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new InputStreamReader(new FileInputStream(template)));
+            String line = "";
+            while ((line = reader.readLine()) !=null)
+                stringBuilder.append(line);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        HashSet<String> set = new HashSet<String>();
+        JSONObject jsonObject = new JSONObject(stringBuilder.toString());
+
+        JSONObject front = jsonObject.getJSONObject("front");
+        set.addAll(front.keySet());
+
+        JSONObject back = jsonObject.getJSONObject("back");
+        set.addAll(back.keySet());
+
+        int i = 0;
+        placeHolders = new HashMap<String, Integer>();
+        for(String s : set)
+            placeHolders.put(s.strip(),i++);
+        placeholder_list.getItems().addAll(placeHolders.keySet());
+
+        for(String k : front.keySet()){
+            JSONObject obj = front.getJSONObject(k);
+            JSONArray posXY = obj.getJSONArray("position");
+            Element e = new Element(k,posXY.getDouble(0),posXY.getDouble(1));
+            e.size = obj.getJSONObject("fontStyle").getInt("size");
+            JSONArray colourRGBA = obj.getJSONObject("fontStyle").getJSONArray("color");
+            e.color = new Color(colourRGBA.getDouble(0),colourRGBA.getDouble(1),colourRGBA.getDouble(2),colourRGBA.getDouble(3));
+            e.font = Font.font(obj.getJSONObject("fontStyle").getString("fontFamily"));
+            this.front.droppedEntities.add(e);
+        }
+
+        for(String k : back.keySet()){
+            JSONObject obj = back.getJSONObject(k);
+            JSONArray posXY = obj.getJSONArray("position");
+            Element e = new Element(k,posXY.getDouble(0),posXY.getDouble(1));
+            e.size = obj.getJSONObject("fontStyle").getInt("size");
+            JSONArray colourRGBA = obj.getJSONObject("fontStyle").getJSONArray("color");
+            e.color = new Color(colourRGBA.getDouble(0),colourRGBA.getDouble(1),colourRGBA.getDouble(2),colourRGBA.getDouble(3));
+            e.font = Font.font(obj.getJSONObject("fontStyle").getString("fontFamily"));
+            this.back.droppedEntities.add(e);
+        }
+
+        try{
+            redraw();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     private void export(){
@@ -494,6 +571,43 @@ public class Controller implements Initializable {
             } catch (Exception e) {
             }
         }
+    }
+
+    void upload(String org,String templatename) throws IOException{
+        Stage primaryStage = new Stage();
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("uploader.fxml"));
+
+        HashMap<String,Object> map = new HashMap<>();
+        if(templatename!=null)
+            map.put("NAME",templatename);
+        map.put("ORG",org);
+        map.put("FRONT",img_path_box_f.getText());
+        map.put("BACK",img_path_box_b.getText());
+        JSONGenerator jsonGenerator = new JSONGenerator(front,back);
+        jsonGenerator.saveJSON();
+        map.put("TEMPLATE",jsonGenerator.getPath());
+
+        loader.setResources(new ResourceBundle() {
+            @Override
+            protected Object handleGetObject(String key) {
+                return map.get(key);
+            }
+
+            @Override
+            public Enumeration<String> getKeys() {
+                return Collections.enumeration(map.keySet());
+            }
+        });
+
+        Parent root = loader.load();
+        primaryStage.initModality(Modality.WINDOW_MODAL);
+        primaryStage.initOwner(curr_stg);
+        primaryStage.setTitle("CardFiller");
+        primaryStage.setScene(new Scene(root, 674, 527));
+        primaryStage.setResizable(false);
+        primaryStage.show();
+        ((Uploader)loader.getController()).curr_stg = primaryStage;
+
     }
 
 }
